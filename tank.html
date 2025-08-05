@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Water Tank Simulation</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            margin-top: 40px;
+        }
+        .tank {
+            width: 150px;
+            height: 300px; /* 30cm tank */
+            border: 3px solid #333;
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #e0e0e0;
+        }
+        .layer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+        .water {
+            background: blue;
+            height: 0;
+            z-index: 1;
+            opacity: 0.8;
+        }
+        .snow {
+            background: white;
+            height: 0;
+            z-index: 2;
+            opacity: 0.9;
+        }
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .info {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Advanced Water Tank Simulation</h2>
+    <div class="tank">
+        <div class="layer water" id="water"></div>
+        <div class="layer snow" id="snow"></div>
+    </div>
+
+    <div class="buttons">
+        <button onclick="startFilling('water')">Fill Water (2cm/sec)</button>
+        <button onclick="startFilling('snow')">Fill Snow (3cm/sec)</button>
+        <button onclick="startDraining()">Drain Water (1.5cm/sec)</button>
+        <button onclick="startMelting()">Melt Snow (1cm/sec)</button>
+        <button onclick="stopAction()">Stop</button>
+        <button onclick="resetTank()">Reset</button>
+    </div>
+
+    <div class="info" id="info">Water: 0cm | Snow: 0cm | Total: 0cm</div>
+
+    <script>
+        const tankHeightCm = 30; 
+        const pxPerCm = 10; // scale
+        let waterHeight = 0;
+        let snowHeight = 0;
+        let intervalId = null;
+
+        function startFilling(type) {
+            clearInterval(intervalId);
+            let speed = type === 'water' ? 2 : 3; // cm/sec
+            intervalId = setInterval(() => {
+                if (getTotalHeight() < tankHeightCm) {
+                    if (type === 'water') {
+                        waterHeight = Math.min(waterHeight + speed / 10, tankHeightCm - snowHeight);
+                    } else {
+                        snowHeight = Math.min(snowHeight + speed / 10, tankHeightCm - waterHeight);
+                    }
+                    updateUI();
+                } else {
+                    clearInterval(intervalId);
+                }
+            }, 100);
+        }
+
+        function startDraining() {
+            clearInterval(intervalId);
+            const drainSpeed = 1.5; // cm/sec
+            intervalId = setInterval(() => {
+                if (waterHeight > 0) {
+                    waterHeight = Math.max(waterHeight - drainSpeed / 10, 0);
+                    updateUI();
+                } else {
+                    clearInterval(intervalId);
+                }
+            }, 100);
+        }
+
+        function startMelting() {
+            clearInterval(intervalId);
+            const meltSpeed = 1; // cm/sec
+            intervalId = setInterval(() => {
+                if (snowHeight > 0) {
+                    let meltAmount = Math.min(meltSpeed / 10, snowHeight);
+
+                    // Check if adding melted water would overflow
+                    if (getTotalHeight() - snowHeight + waterHeight + meltAmount > tankHeightCm) {
+                        meltAmount = Math.max(0, tankHeightCm - (waterHeight + (snowHeight - meltAmount)));
+                    }
+
+                    snowHeight -= meltAmount;
+                    waterHeight += meltAmount;
+
+                    updateUI();
+                } else {
+                    clearInterval(intervalId);
+                }
+            }, 100);
+        }
+
+        function stopAction() {
+            clearInterval(intervalId);
+        }
+
+        function resetTank() {
+            clearInterval(intervalId);
+            waterHeight = 0;
+            snowHeight = 0;
+            updateUI();
+        }
+
+        function getTotalHeight() {
+            return waterHeight + snowHeight;
+        }
+
+        function updateUI() {
+            document.getElementById('water').style.height = (waterHeight * pxPerCm) + "px";
+            document.getElementById('snow').style.height = (snowHeight * pxPerCm) + "px";
+            document.getElementById('snow').style.bottom = (waterHeight * pxPerCm) + "px";
+
+            document.getElementById('info').innerText =
+                `Water: ${waterHeight.toFixed(1)}cm | Snow: ${snowHeight.toFixed(1)}cm | Total: ${getTotalHeight().toFixed(1)}cm`;
+        }
+    </script>
+
+</body>
+</html>
